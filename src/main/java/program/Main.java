@@ -1,14 +1,63 @@
 package program;
 
+import models.Answer;
+import models.Question;
 import models.Role;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import services.RoleService;
 import utils.HibernateSessionUtils;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
+        //addQuestion();
+        showQuestions();
+    }
+
+    private static void showQuestions() {
+        try (Session context = HibernateSessionUtils.getSessionFactory().openSession()) {
+            Query query = context.createQuery("FROM Question");
+            List<Question> list = query.list();
+            for(Question question : list) {
+                System.out.println(question);
+            }
+        }
+    }
+
+    private static void addQuestion() {
+        try (Session context = HibernateSessionUtils.getSessionFactory().openSession()) {
+            Scanner in = new Scanner(System.in);
+            Transaction tx = context.beginTransaction();
+            System.out.print("Enter question: ");
+            String questionText = in.nextLine();
+            Question question = new Question();
+            question.setName(questionText);
+            context.save(question);
+            String action = "";
+            do {
+                System.out.print("Enter answer: ");
+                String text = in.nextLine();
+                System.out.println("1-correct, 2-incorrect");
+                boolean isTrue = Byte.parseByte(in.nextLine()) == 1;
+                Answer answer = new Answer();
+                answer.setText(text);
+                answer.setTrue(isTrue);
+                answer.setQuestion(question);
+                context.save(answer);
+                System.out.println("0. Exit");
+                System.out.println("1. Next variant");
+                System.out.print("->_");
+                action = in.nextLine();
+            } while (!action.equals("0"));
+            tx.commit();
+        }
+    }
+
+    private static void test() {
         System.out.println("Main.main");
         Session context = HibernateSessionUtils.getSessionFactory().openSession();
         RoleService roleService = new RoleService(context);
@@ -62,6 +111,5 @@ public class Main {
                 System.out.println("Error: " + ex.getMessage());
             }
         } while (!userInput.equals("exit"));
-
     }
 }
